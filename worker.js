@@ -1,21 +1,768 @@
+const APP_CATALOG = [
+  "LINE",
+  "Chat",
+  "Mail",
+  "Maps",
+  "Amazon",
+  "Spotify",
+  "Instagram",
+  "Slack",
+  "Camera",
+  "X",
+  "Spotify",
+  "PayPay",
+  "Games",
+  "Clock",
+  "Photos",
+  "Weather",
+  "Dropbox",
+  "Bank",
+  "Settings",
+  "Safari",
+  "Messages",
+  "YouTube",
+  "TikTok",
+  "Google",
+  "Discord",
+  "Fitbit",
+  "Calendar",
+];
+
+const SAFE_TEMPLATES = [
+  "新着メッセージが届きました",
+  "アップデートが完了しました",
+  "3件の通知があります",
+  "今日の天気を確認しました",
+  "注文が発送されました",
+  "リマインダーが1件あります",
+  "共有した写真を見ました",
+  "おすすめ動画が届きました",
+  "サブスクの支払いが完了しました",
+  "今週の予定を確認してください",
+  "新しいチケットが追加されました",
+  "タイムラインに更新がありました",
+];
+
+function shuffle(items) {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function buildGamePage() {
+  return `<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notification Clear</title>
+    <style>
+      :root {
+        --bg-1: #0b1220;
+        --bg-2: #2a1037;
+        --panel: rgba(255, 255, 255, 0.18);
+        --panel-strong: rgba(255, 255, 255, 0.2);
+        --line: rgba(255, 255, 255, 0.25);
+        --text: #f3f5f9;
+        --muted: rgba(255, 255, 255, 0.7);
+        --glass: rgba(255, 255, 255, 0.09);
+        --danger: #ff4d6d;
+        --danger-soft: rgba(255, 77, 109, 0.22);
+        --safe: #6cd7ff;
+        --safe-soft: rgba(108, 215, 255, 0.18);
+        --warning: #ffd166;
+        --hp-fill: linear-gradient(90deg, #16d6a0, #6ef0b2);
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        height: 100%;
+        font-family: "SF Pro Display", "Segoe UI", sans-serif;
+        color: var(--text);
+        background: #050b15;
+      }
+
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 15% 20%, rgba(44, 82, 122, 0.8), transparent 24%),
+          radial-gradient(circle at 68% 25%, rgba(191, 107, 255, 0.45), transparent 24%),
+          linear-gradient(135deg, #0c1320 0%, #1c1028 55%, #120d17 100%);
+      }
+
+      .phone {
+        position: relative;
+        width: min(92vw, 460px);
+        height: min(96vh, 860px);
+        border-radius: 32px;
+        overflow: hidden;
+        background: rgba(12, 14, 19, 0.52);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow: 0 32px 80px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+
+      .phone::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.0)),
+          radial-gradient(circle at 30% 15%, rgba(72, 120, 155, 0.25), transparent 28%),
+          radial-gradient(circle at 70% 60%, rgba(214, 110, 255, 0.16), transparent 36%),
+          rgba(7, 11, 18, 0.14);
+      }
+
+      .screen {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        padding: 20px 18px 18px 18px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px 0 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      .time {
+        font-size: clamp(2.5rem, 6vw, 4rem);
+        line-height: 1;
+        font-weight: 300;
+        letter-spacing: -0.06em;
+        margin: 0 0 0 6px;
+      }
+
+      .date {
+        font-size: 1.05rem;
+        margin: 6px 0 0 10px;
+        color: var(--muted);
+      }
+
+      .status-icons {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-right: 10px;
+      }
+
+      .bell {
+        width: 18px;
+        height: 18px;
+        border: 2px solid rgba(255,255,255,0.8);
+        border-bottom: 0;
+        border-radius: 12px 12px 10px 10px;
+        position: relative;
+        opacity: 0.9;
+      }
+
+      .bell::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: -7px;
+        width: 9px;
+        height: 6px;
+        border: 2px solid rgba(255,255,255,0.8);
+        border-top: 0;
+        border-radius: 0 0 8px 8px;
+      }
+
+      .info-block {
+        width: 100%;
+        margin-top: 6px;
+      }
+
+      .top-panel {
+        margin: 6px 8px 0 8px;
+        background: rgba(255, 255, 255, 0.19);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 18px;
+        padding: 12px 14px 10px;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 12px;
+        align-items: center;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+      }
+
+      .badge {
+        width: 26px;
+        height: 26px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255,255,255,0.16);
+        border: 1px solid rgba(255,255,255,0.18);
+        font-size: 0.8rem;
+      }
+
+      .top-panel strong {
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .top-panel .meta {
+        color: #1b1d21;
+        font-weight: 700;
+        opacity: 0.8;
+      }
+
+      .caret {
+        width: 10px; height: 10px;
+        border-right: 2px solid rgba(0,0,0,0.7);
+        border-bottom: 2px solid rgba(0,0,0,0.7);
+        transform: rotate(45deg);
+        margin-right: 8px;
+      }
+
+      .hud {
+        margin-top: 18px;
+        padding: 0 10px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .hud-card {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 16px;
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .label {
+        font-size: 0.72rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.7);
+      }
+
+      .battery-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .battery {
+        position: relative;
+        width: 62px;
+        height: 24px;
+        border: 2px solid rgba(255,255,255,0.8);
+        border-radius: 8px;
+        padding: 2px;
+        display: inline-block;
+      }
+
+      .battery::after {
+        content: "";
+        position: absolute;
+        right: -6px;
+        top: 7px;
+        width: 3px;
+        height: 10px;
+        border-radius: 2px;
+        background: rgba(255,255,255,0.8);
+      }
+
+      .battery-fill {
+        height: 100%;
+        border-radius: 5px;
+        background: var(--hp-fill);
+        transition: width 0.2s ease;
+      }
+
+      .hp-text {
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
+
+      .timer {
+        font-size: 1.05rem;
+        font-weight: 700;
+      }
+
+      .prompt {
+        margin: 12px 10px 0;
+        padding: 10px 12px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 14px;
+        color: rgba(255,255,255,0.82);
+        font-size: 0.82rem;
+        line-height: 1.5;
+      }
+
+      .danger-tag {
+        color: #ffd0d8;
+        font-weight: 700;
+      }
+
+      .notification-list {
+        flex: 1;
+        margin-top: 14px;
+        padding: 0 8px 8px;
+        overflow: auto;
+        scrollbar-width: none;
+      }
+
+      .notification-list::-webkit-scrollbar {
+        display: none;
+      }
+
+      .notice {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 12px;
+        align-items: center;
+        width: 100%;
+        padding: 12px 12px;
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 18px;
+        background: rgba(255,255,255,0.08);
+        margin-bottom: 10px;
+        text-align: left;
+        color: var(--text);
+        cursor: pointer;
+        transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+      }
+
+      .notice:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 16px rgba(0,0,0,0.12);
+      }
+
+      .notice.safe {
+        border-color: rgba(108, 215, 255, 0.28);
+        background: rgba(108, 215, 255, 0.08);
+      }
+
+      .notice.forbidden {
+        border-color: rgba(255, 77, 109, 0.35);
+        background: rgba(255, 77, 109, 0.08);
+      }
+
+      .notice.hidden {
+        display: none;
+      }
+
+      .icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.88rem;
+        font-weight: 700;
+        background: rgba(255,255,255,0.12);
+      }
+
+      .notice.safe .icon {
+        background: var(--safe-soft);
+        color: #dff9ff;
+      }
+
+      .notice.forbidden .icon {
+        background: var(--danger-soft);
+        color: #ffdbe3;
+      }
+
+      .notice-body {
+        min-width: 0;
+      }
+
+      .notice-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 3px;
+      }
+
+      .notice-app {
+        font-weight: 700;
+        font-size: 0.98rem;
+      }
+
+      .notice-tag {
+        font-size: 0.58rem;
+        color: #fff;
+        background: rgba(255,255,255,0.12);
+        border-radius: 999px;
+        padding: 3px 7px;
+        letter-spacing: 0.04em;
+      }
+
+      .notice.forbidden .notice-tag {
+        background: rgba(255, 77, 109, 0.26);
+      }
+
+      .notice-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.8rem;
+        color: rgba(255,255,255,0.76);
+      }
+
+      .notice-time {
+        color: rgba(255,255,255,0.7);
+        font-size: 0.72rem;
+        font-weight: 600;
+        justify-self: end;
+      }
+
+      .footer {
+        position: sticky;
+        bottom: 0;
+        padding-top: 10px;
+        display: flex;
+        justify-content: center;
+      }
+
+      .home-indicator {
+        width: 130px;
+        height: 5px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.7);
+        opacity: 0.9;
+        margin: 0 auto 4px;
+      }
+
+      .result-banner {
+        position: absolute;
+        inset: auto 18px 46px 18px;
+        border-radius: 18px;
+        padding: 12px 16px;
+        text-align: center;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.14);
+        display: none;
+        z-index: 2;
+      }
+
+      .result-banner.show {
+        display: block;
+      }
+
+      .result-banner.win {
+        background: rgba(58, 168, 102, 0.24);
+        color: #dcfbe8;
+      }
+
+      .result-banner.lose {
+        background: rgba(255, 93, 114, 0.22);
+        color: #ffe1e7;
+      }
+
+      @media (max-width: 420px) {
+        .phone {
+          width: 100vw;
+          height: 100vh;
+          border-radius: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <div class="time" id="clock">12:42</div>
+          <div class="status-icons">
+            <div class="bell" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="date" id="dateLabel">1月22日（水）</div>
+
+        <div class="top-panel">
+          <div class="badge">🔔</div>
+          <div>
+            <strong id="forbiddenName">禁止アプリ</strong>
+          </div>
+          <div class="caret" aria-hidden="true"></div>
+        </div>
+
+        <div class="hud">
+          <div class="hud-card">
+            <div class="label">HP</div>
+            <div class="battery-wrap">
+              <div class="battery" aria-label="HP battery"><div class="battery-fill" id="batteryFill" style="width: 100%"></div></div>
+              <span class="hp-text" id="hpText">5 / 5</span>
+            </div>
+          </div>
+          <div class="hud-card timer" id="timerLabel">60.0s</div>
+        </div>
+
+        <div class="prompt">
+          <span class="danger-tag">禁止アプリ</span> の通知を消すとHPが減るよ。<br />
+          それ以外の通知を60秒以内に全部消してクリア！
+        </div>
+
+        <div class="notification-list" id="notificationList" aria-live="polite"></div>
+
+        <div class="footer">
+          <div class="home-indicator" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <div class="result-banner" id="resultBanner"></div>
+    </div>
+
+    <script>
+      const APP_CATALOG = [
+        "LINE", "Chat", "Mail", "Maps", "Amazon", "Spotify", "Instagram", "Slack",
+        "Camera", "X", "PayPay", "Clock", "Photos", "Weather", "Dropbox", "Bank",
+        "Settings", "Safari", "Messages", "Youtube", "TikTok", "Discord", "Calendar"
+      ];
+
+      const state = {
+        forbidden: "",
+        hp: 5,
+        maxHp: 5,
+        timeLeft: 60,
+        notifications: [],
+        gameOver: false,
+        timerId: null,
+      };
+
+      function pad(num) {
+        return String(num).padStart(2, "0");
+      }
+
+      function formatClock(date) {
+        return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+      }
+
+      function formatDate(date) {
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        const weekday = ["日", "月", "火", "水", "木", "金", "土"][date.getDay()];
+        return `${month}月${day}日（${weekday}）`;
+      }
+
+      function pickRandom(list) {
+        return list[Math.floor(Math.random() * list.length)];
+      }
+
+      function createNotification(app, forcedForbidden) {
+        const text = pickRandom([
+          `${app}からメッセージが届きました`,
+          `${app}に新しい通知があります`,
+          `${app}で更新がありました`,
+          `${app}のアラートを確認してください`,
+          `${app}のリマインダーです`,
+          `${app}の未読が残っています`,
+          `${app}で実行が完了しました`,
+          `${app}から新しいチケットが届きました`,
+        ]);
+
+        return {
+          app,
+          forbidden: !!forcedForbidden,
+          title: text,
+          time: `${Math.floor(Math.random() * 59) + 1}分前`,
+          removed: false,
+        };
+      }
+
+      function generateGame() {
+        const forbidden = pickRandom(APP_CATALOG);
+        const safeApps = APP_CATALOG.filter((app) => app !== forbidden);
+        const safeCount = 5 + Math.floor(Math.random() * 4);
+        const forbiddenCount = 2 + Math.floor(Math.random() * 2);
+
+        const notifications = [];
+        for (let i = 0; i < safeCount; i += 1) {
+          notifications.push(createNotification(pickRandom(safeApps), false));
+        }
+        for (let i = 0; i < forbiddenCount; i += 1) {
+          notifications.push(createNotification(forbidden, true));
+        }
+
+        state.notifications = shuffle(notifications);
+        state.forbidden = forbidden;
+        state.hp = state.maxHp;
+        state.timeLeft = 60;
+        state.gameOver = false;
+
+        document.getElementById("forbiddenName").textContent = `${forbidden} を消すな`;
+        render();
+        startTimer();
+      }
+
+      function shuffle(items) {
+        const arr = [...items];
+        for (let i = arr.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      function render() {
+        const list = document.getElementById("notificationList");
+        const showable = state.notifications.filter((item) => !item.removed);
+        const safeRemaining = showable.filter((item) => !item.forbidden).length;
+
+        const battery = document.getElementById("batteryFill");
+        const hpText = document.getElementById("hpText");
+        const timerLabel = document.getElementById("timerLabel");
+
+        const pct = Math.max(0, (state.hp / state.maxHp) * 100);
+        battery.style.width = `${pct}%`;
+        hpText.textContent = `${state.hp} / ${state.maxHp}`;
+        timerLabel.textContent = `${Math.max(0, state.timeLeft).toFixed(1)}s`;
+
+        list.innerHTML = showable
+          .map((item, index) => {
+            const unsafeText = item.forbidden ? "禁止" : "通常";
+            return `
+              <button class="notice ${item.forbidden ? "forbidden" : "safe"}" type="button" data-index="${index}">
+                <div class="icon">${item.app.slice(0, 1).toUpperCase()}</div>
+                <div class="notice-body">
+                  <div class="notice-head">
+                    <span class="notice-app">${item.app}</span>
+                    <span class="notice-tag">${unsafeText}</span>
+                  </div>
+                  <div class="notice-text">${item.title}</div>
+                </div>
+                <div class="notice-time">${item.time}</div>
+              </button>
+            `;
+          })
+          .join("");
+
+        document.querySelectorAll(".notice").forEach((button) => {
+          button.addEventListener("click", () => {
+            const index = Number(button.dataset.index);
+            handleTap(index);
+          });
+        });
+
+        const resultBanner = document.getElementById("resultBanner");
+        if (!state.gameOver && safeRemaining === 0) {
+          finishGame(true);
+        }
+      }
+
+      function handleTap(index) {
+        if (state.gameOver) return;
+        const showable = state.notifications.filter((item) => !item.removed);
+        const item = showable[index];
+        if (!item) return;
+
+        const actualIndex = state.notifications.findIndex((entry) => entry === item);
+        if (actualIndex === -1) return;
+
+        if (item.forbidden) {
+          state.hp -= 1;
+          item.removed = true;
+          if (state.hp <= 0) {
+            finishGame(false, "禁止アプリを消したのでHPが0になった！");
+            return;
+          }
+        } else {
+          item.removed = true;
+          const safeLeft = state.notifications.filter((entry) => !entry.removed && !entry.forbidden).length;
+          if (safeLeft === 0) {
+            finishGame(true, "クリア！ すべての安全な通知を消した！");
+            return;
+          }
+        }
+
+        render();
+      }
+
+      function finishGame(isWin, message = "") {
+        state.gameOver = true;
+        clearInterval(state.timerId);
+
+        const banner = document.getElementById("resultBanner");
+        banner.textContent = isWin
+          ? message || "クリア！ 60秒以内に通知を消し切った！"
+          : message || "ゲームオーバー！ 禁止アプリを消してしまった…";
+        banner.classList.toggle("win", isWin);
+        banner.classList.toggle("lose", !isWin);
+        banner.classList.add("show");
+
+        setTimeout(() => {
+          banner.classList.remove("show");
+        }, 1800);
+
+        setTimeout(() => {
+          generateGame();
+        }, 1800);
+      }
+
+      function startTimer() {
+        clearInterval(state.timerId);
+        state.timerId = setInterval(() => {
+          if (state.gameOver) return;
+          state.timeLeft = Math.max(0, state.timeLeft - 0.1);
+          if (state.timeLeft <= 0) {
+            finishGame(false, "時間切れ！ 60秒以内にクリアできなかった…");
+          }
+          render();
+        }, 100);
+      }
+
+      const clock = document.getElementById("clock");
+      const dateLabel = document.getElementById("dateLabel");
+
+      function updateClock() {
+        const now = new Date();
+        clock.textContent = formatClock(now);
+        dateLabel.textContent = formatDate(now);
+      }
+
+      updateClock();
+      setInterval(updateClock, 5000);
+      generateGame();
+    </script>
+  </body>
+</html>`;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-
-    // 例: https://rec877.com/untiburiburi/proxy?url=https://example.com/
     const target = url.searchParams.get("url");
 
     if (!target) {
-      return new Response(
-        JSON.stringify({
-          error: "Missing target URL.",
-          example: "https://rec877.com/untiburiburi/proxy?url=https://example.com/",
-        }, null, 2),
-        {
-          status: 400,
-          headers: { "content-type": "application/json; charset=utf-8" },
-        }
-      );
+      return new Response(buildGamePage(), {
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "no-store",
+        },
+      });
     }
 
     let targetUrl;
@@ -38,7 +785,6 @@ export default {
       }
     }
 
-    // Optional Basic Auth
     const user = env.BASIC_AUTH_USER || "";
     const pass = env.BASIC_AUTH_PASS || "";
 
@@ -62,8 +808,6 @@ export default {
     }
 
     const headers = new Headers(request.headers);
-
-    // Remove hop-by-hop headers that should not be forwarded.
     const hopByHopHeaders = [
       "host",
       "content-length",
@@ -95,11 +839,9 @@ export default {
 
     const upstream = await fetch(targetUrl, init);
     const responseHeaders = new Headers(upstream.headers);
-
-    // Make it easier to use from browser JS.
     responseHeaders.set("Access-Control-Allow-Origin", "*");
     responseHeaders.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-    responseHeaders.set("Access-Control-Allow-Headers", "*" );
+    responseHeaders.set("Access-Control-Allow-Headers", "*");
 
     if (request.method === "OPTIONS") {
       return new Response(null, {
